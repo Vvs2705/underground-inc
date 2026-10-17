@@ -1537,3 +1537,139 @@ O Forge Street (repo `Vvs2705/forge-street`, v0.6) já tem, testado em C# puro e
 | Gravação de criativos 9:16 do build real (`-record`), `medir_aparelho.sh` e anúncios simulados no LevelPlay | criativos do teste Underground × Forge; FPS/memória no aparelho |
 
 O que **não** se reaproveita: o joystick e a física de andar (o Underground é de toque), a arte (2D lateral × sprites pré-renderizados) e o layout. Se os dois jogos seguirem, vale extrair um pacote `VStack.IdleCore` com estação, fila, cofre, bot e diário. Até lá, copiar e adaptar.
+
+---
+
+## Lições do estúdio aplicadas a Underground Inc. (do Dungeon Courier, 2026-10-16)
+
+> **Status: PROPOSTO.** Nada desta seção foi implementado nem testado neste repositório. O jogo ainda é só GDD e depende da decisão do slot idle (§51).
+
+O Dungeon Courier (DC) chegou à 1.4.1-beta em 2026-10-16 com o GDD inteiro feito, arte v2, tutorial guiado, anúncios e compras integrados e AAB assinado. Cada lição abaixo foi paga lá com tempo, crédito ou retrabalho. A versão completa está no playbook [`LICOES_PARA_O_ESTUDIO.md`](https://github.com/Vvs2705/dungeon-courier/blob/main/docs/LICOES_PARA_O_ESTUDIO.md), com cópia na memória do estúdio (`C:\Users\VINICIUS\Videos\MEUS PROJETOS\Agentes\_memoria\PLAYBOOK_ESTUDIO_DUNGEON_COURIER.md`). Esta seção traduz o playbook para a mina e complementa o §57: o Forge Street dá o núcleo de economia (tick, cofre, bot), e o DC dá o processo, a rota de arte, o tutorial, a interface e o caminho até a loja. Convenção: `dc:` = repo `Vvs2705/dungeon-courier` (pasta `JOGOS NOVOS/06_DUNGEON_COURIER`); `fs:` = repo `Vvs2705/forge-street` (pasta `JOGOS NOVOS/03_FORGE_STREET`). Os clipes Mixamo ficam **fora do git** nos dois jogos: o reuso é cópia do disco, registrada em `docs/PROVENIENCIA.md`. O aval do Vinicius de 2026-10-09 cobre reusar, como cópia, os clipes Mixamo que já estão no disco (`dc:docs/PROVENIENCIA.md` §3).
+
+### Processo
+- **Contrato da v0.1 antes de codar.** **Fazer:** `docs/CONTRATO_V01.md` com o MVP do §51 (5 camadas, elevador, armazém/venda, 1 gerente por camada, gate de 300 m, offline de 2 h a 50%, rewarded 2× e boost de 5 min, parede com raio-X de 1 tipo, 3 minerais, 2 visuais de bioma, UG-1 nas camadas 3–5), os números iniciais e o critério de pronto. Também `docs/CONTRATO_LANCAMENTO.md`, com a matriz "§ do GDD × feito" (feito / v0.2 / cortado / depende do Vinicius). **Por quê:** no DC, com o contrato escrito antes, núcleo e View andaram em paralelo sem quebrar a API, e a matriz impediu dar o jogo por pronto antes da hora. **Reaproveitar:** `dc:docs/CONTRATO_V01.md` e `dc:docs/CONTRATO_LANCAMENTO.md` §1.
+- **Memória de retomada.** **Fazer:** criar `_memoria/STATUS_underground-inc.md`, com um bloco "CONTINUAR DAQUI" a cada pausa (o que está pronto, o que falta, os comandos). **Por quê:** o Vinicius retoma dizendo só "vamos continuar"; sem o bloco, cada sessão reabre a investigação. **Reaproveitar:** `_memoria/STATUS_dungeon-courier-v01.md` como modelo.
+- **Fotos antes do PR e um processo pesado por vez.** **Fazer:** toda mudança visual leva fotos 540×960 de cada tela (`-shot`), conferidas pelo coordenador. Unity, Blender e emulador nunca rodam juntos (PC de 7,7 GB). **Por quê:** no DC, as fotos acharam texto sobreposto e o joystick tampando o personagem, e nenhum dos 169 testes verdes pegou isso. Com dois processos pesados juntos, o sistema mata o Blender.
+- **Arte crua fora do git, com backup.** **Fazer:** zips do Tripo, FBX do Mixamo e `.blend` com modelo pago ficam em `arte/tripo` e `arte/mixamo` do **checkout principal** (o worktree some quando é apagado) e num drive privado. Logo, ícones e retratos pintados entram no git (`arte/logo`, `arte/ui`, `arte/retratos`). **Por quê:** o repositório é público e a licença dos modelos não permite redistribuir. **Reaproveitar:** `dc:docs/PROVENIENCIA.md` (livro-razão de créditos e registro por peça).
+
+### Código e testes
+- **Esqueleto do projeto: copiar, não reescrever.** **Fazer:** o núcleo vem do Forge, em `fs:client/Assets/_FS/Scripts/Core/`: `Sim.cs` (camada = estação; carrinho e elevador = carregador; estados "fome" e "travada"), `SaveEnvelope.cs` (SHA-256 + schema), `Equipe.cs` (trabalhador fixo e nomeado, sem traço sorteado), `Metas.cs` (o dia vira às 04:00 no fuso gravado: base das diárias do §23) e `Anuncios.cs` (id de transação e teto diário). A casca vem do DC, em `dc:client/Assets/_DC/`: `Editor/Setup.cs`, `Editor/SpriteImport.cs` e, em `Scripts/View/`, `Art.cs`, `Tour.cs`, `Textos.cs`, `Exportar.cs`, `AreaSegura.cs`, `Dp.cs` e `SpriteSheet.cs`; mais as ferramentas `client/tools/coretests` e `viewcheck`. A API do núcleo fica documentada no topo do `Sim.cs`. **Por quê:** o DC roda 169 testes em 2–3 min sem abrir o Unity, e o Forge já tem a economia de filas medida num POCO F4 (60 fps, 0 crash).
+- **Namespace `UG`, não `UI`.** **Fazer:** a pasta pode continuar `_UI`, mas o namespace e o asmdef viram `UG` e `UG.Core`. **Por quê:** `UI` colide com o `UnityEngine.UI` do uGUI, a mesma armadilha do `Rect` entre o Core e o Unity no DC (`using Rect = UnityEngine.Rect;`). Pelo mesmo motivo, vale rever o escopo de commit `ui-core` do `CONTRIBUTING.md`.
+- **Bot, perfis e `-autoplay`.** **Fazer:** o `-autoplay N` imprime o tempo até o gate de 300 m, a renda por minuto, a % das compras por camada (UG-7: ≥ 15% nas camadas 1–2) e a escolha de veio (UG-1: nenhuma acima de 70%), nos perfis F2P, lento (×0,4) e "assiste anúncio". **Por quê:** no DC, o bot fez o balance e o portão. No Forge, a pessoa real foi 1,7–3,7× mais lenta que o bot, então a duração se mede com gente (diário), não com o bot. **Reaproveitar:** `fs:client/Assets/_FS/Scripts/Core/Bot.cs`, `fs:client/tools/econsim` e `dc:docs/BALANCE.md` (formato).
+- **Invariantes do §55 viram testes negativos nomeados.** **Fazer:** a parede nunca sorteia (mesma profundidade e mesma contagem dão o mesmo prêmio); incidente nunca acontece offline; toda concessão tem id de transação; offline com Δt ≤ 0 paga 0. **Por quê:** regra que mora só em prosa não sobrevive ao código. **Reaproveitar:** `fs:client/Assets/_FS/Tests/EditMode/ExploitTests.cs`.
+- **Flags de teste**, só com `-testsession` (não lê nem grava save, semente 1): `-tela <nome>`, `-camada K`, `-profundidade M`, `-bot`, `-dev-desbloqueia` (mina inteira aberta, para fotografar os biomas fundos), `-lang pt|en|es|id`, `-shot arq -shotdelay s`, `-record pasta …` (o criativo "How deep can you go?" com a câmera descendo, determinístico), `-tutorial` e `-adtestsuite`. **Por quê:** no DC, fotos da loja, criativos e QA saíram do jogo real sem tocar no save do jogador. **Reaproveitar:** a leitura de argumentos do `dc:Scripts/View/Game.cs`.
+- **Diário CSV de playtest.** **Fazer:** eventos `first_sale`, `depth_reached`, `vein_choice`, `wall_open`, `offline_claim`, `rewarded_*` e `tour_step`, sem dado pessoal e exportados pelo próprio jogador. O relatório calcula os portões do §56: 1ª venda em < 60 s, 300 m no D0 e claim na 2ª sessão. **Reaproveitar:** `dc:Scripts/View/Exportar.cs` + `dc:client/tools/diario_report.py` (a versão do Forge já tem PORTÕES).
+- **Tabelas por enum com reserva e textos em 4 idiomas.** **Fazer:** biomas, minerais e máquinas indexados por enum, com linha de reserva procedural; enums salvos só crescem no fim. O caderno do geólogo (UG-4) e todo texto fixo vão em `L(pt, en, es, id)`: frase inteira por idioma, números por `{0}`, só Latin-1 ("turmalina Paraíba" passa; fórmula química com subscrito, não). **Por quê:** no DC, enum novo sem linha na tabela quebrava com `IndexOutOfRange`. **Reaproveitar:** `dc:Scripts/View/Textos.cs`.
+- **Áudio sintetizado.** **Fazer:** os sons do §44 (pedra quebrando, broca, carrinho, elevador, moeda, o "achado" do mineral raro) saem de script, e a ambiência por profundidade sai de drones sintetizados, com um filtro diferente por bioma. **Por quê:** sem asset de terceiros, não há licença a rastrear. **Reaproveitar:** `dc:client/tools/audio_gen.py`.
+- **Portão antes de todo PR.** `dotnet test client/tools/coretests` · `dotnet build client/tools/viewcheck/view` · Unity EditMode · build Windows · `-autoplay 30` com 0 exceções · fotos 540×960 conferidas. Armadilhas já pagas: o dotnet usa NUnit 3.14 e o Unity usa 3.5 (rode o EditMode antes do PR); o viewcheck num worktree novo precisa das DLLs de `Library/ScriptAssemblies`; o Unity reescreve o `Packages/manifest.json` ao criar o projeto; `PlayerPrefs` não pode ser lido em inicializador de campo. **Reaproveitar:** `fs:client/tools/verify.sh`.
+
+### Arte e animação
+- **Rota: 3D modelado → sprites 2D em corte.** **Fazer:** o MVP é 2D em corte lateral (§43), e a rota do DC entrega isso: Tripo (imagem grátis → modelo HD → Auto Rig Mixamo) → Blender → `render_sprites.py` com câmera lateral (`--elev` baixo, `--dirs 1`; o lado oposto é espelho) e luz chapada com contorno. O cenário da mina sai do gerador de imagens grátis, não do Tripo: fundo do corte, 3 texturas de rocha e 2 minerais por bioma, parede rachada e silhuetas do raio-X. **Por quê:** um personagem animado de verdade custa 65 créditos e reaproveita clipes; o cenário pintado custa 0. **Reaproveitar:** `dc:client/tools/render_sprites.py`, `render_sprites.ps1`, `folhas.py` e `dc:docs/RENDER_SPRITES.md`.
+- **O que gerar no Tripo: Lote 1 do MVP, ≈ 245 créditos (teto ≈ 355).** Créditos só com aval por lote.
+
+  | Peça | Como | Créditos |
+  |---|---|---|
+  | Minerador humano (capacete com lanterna, macacão) | modelo HD 45 + rig 20 | 65 |
+  | Carrinho de mina, elevador (cabine + roldana), broca do depth gate, armazém/venda da superfície | sem rig, 45 cada | 180 |
+  | Gerente de camada | o mesmo minerador com outra cor (capacete branco, colete laranja) + prancheta | 0 (+65 se a silhueta não ler na tela) |
+  | Picareta e prancheta | gerados **à parte** (regra do Vinicius) e presos ao osso; por script no Blender, como a mochila do ferreiro do Forge | 0 (+45 cada se for pelo Tripo) |
+  | Lote 2 (Alpha, §13): engenheiro, geólogo, motorista e operador | 4 corpos novos, ou 2 corpos + troca de cor | 260, ou ≈ 130 |
+  | Prédios da superfície (§18) | pintados no corte lateral (no Tripo seriam 7 × 45 = 315) | 0 |
+
+  Confira o saldo antes e depois de cada geração e registre em `docs/PROVENIENCIA.md`. Na 1ª peça de cada sessão, confira a receita do painel: o Tripo já voltou com 8K, textura 4K e 2 M polígonos.
+- **Clipes reaproveitados:** todos já estão no disco, no esqueleto `mixamorig:` (0 download, 0 crédito). Os do `_blender/` estão em `06_DUNGEON_COURIER/arte/mixamo/_blender/`.
+
+  | Uso | Clipe | Detalhe |
+  |---|---|---|
+  | Golpe de picareta (minerar) | `_blender/SkelAttack.fbx` ou `_blender/Smash.fbx` | golpe de cima para baixo, impacto no quadro 6 de 12 / 30 quadros |
+  | Jogar minério no carrinho | `_blender/PickThrow.fbx` | o do goblin mineiro; soltura no quadro 7 de 12 |
+  | Parado | `03_FORGE_STREET/arte/mixamo/Idle.fbx` (Breathing Idle) | janela 199–289, preset `BREATH` |
+  | Andar (gerente, motorista) | `03_FORGE_STREET/arte/mixamo/Walking.fbx` ou ARKANA `mixamo-loc-andar-frente.fbx` | In Place; no do ARKANA, o render tira o root motion |
+  | Empurrar o carrinho, carregar minério | `06_DUNGEON_COURIER/arte/mixamo/Hold.fbx` + o andar | com `--hold`, os clipes Carry* herdam os braços dele |
+  | Camada com "fome" ou elevador cheio ("travada") | `_blender/Sleep.fbx` + `_blender/Wake.fbx` | sentado encostado (laço); acorda em 0,4 s. O estado parado fica legível sem texto |
+  | Incidente de gás (UG-3) | `_blender/Stun.fbx` | sentado tonto, laço |
+  | Gerente apitando | `_blender/Call.fbx` | mão na boca |
+  | Geólogo examinando a parede | `03_FORGE_STREET/arte/mixamo/LookingAround.fbx` | — |
+  | Mineral raro, gate atravessado | Forge `Cheering.fbx` | — |
+  | Gerente acenando no cartão do tutorial; venda | Forge `Waving.fbx`; Forge `Thankful.fbx` | — |
+  | Criaturas dos biomas fundos (pós-MVP) | `_blender/Emerge.fbx`, `Burrow.fbx`, `Swipe.fbx` | — |
+
+  O que faltar (picar a parede de lado, puxar a alavanca do elevador) se anima direto no Blender, por keyframe em script e com retarget por delta de rotação sobre o repouso. **Reaproveitar:** `dc:client/tools/anim_blender.py`; a origem e o SHA de cada clipe estão em `dc:docs/PROVENIENCIA.md` §3.
+- **No Blender, sem crédito.** **Fazer:** (1) variantes por troca de cor: uniforme por função e por bioma, níveis do elevador e do carrinho (madeira → aço → neon) e as skins do §29; com luz chapada, a troca é feita direto na folha renderizada; (2) ajuste de forma em vez de gerar de novo: alongar a broca para virar o Mega Drill, cortar a parede rachada com bmesh bisect (como a tampa do baú do DC); (3) lanterna do capacete com emissão, para as camadas escuras; (4) `.blend` salvo depois do 1º import (o FBX do Tripo leva mais de 10 min para importar) e `timeout` em todo render (um render travou 15 h no DC). **Por quê:** no DC, as roupas, o saco do ladrão e o baú saíram sem crédito. **Reaproveitar:** `dc:client/tools/roupas_cor.py` (já tem a receita "mineiro": capacete âmbar e macacão marrom), `roupas_2d.py`, `roupas_courier.py`, `bau_abrindo.py` e `fs:client/tools/props_blender.py`.
+- **Nitidez e tamanho.** **Fazer:** se o minerador parecer pequeno ou borrado no corte, re-renderize com `--hd K` e `--escala E`, com K = min(1,5; 4096 / (quadros × célula)), e ponha um teto de quadros por clipe (`--max-frames`). **Por quê:** com as folhas HD, o APK do DC foi de 67,7 para 83 MiB. **Reaproveitar:** `dc:client/tools/elenco_hd.sh`.
+- **Arte de interface pintada no gerador grátis.** **Fazer:** sobre azul-marinho liso e recortados por script: logo, folha de ~20 ícones 4×3 (minerais do caderno UG-4, máquinas, moeda, profundidade), fundo do menu (o corte da mina), retrato da geóloga para o cartão de contexto e silhuetas do raio-X. **Por quê:** no DC, o retrato pintado no estilo do logo ficou muito mais vistoso que o render 3D recortado. **Reaproveitar:** `dc:client/tools/ui_assets.py`.
+
+### Interface e marca
+- **UI procedural em 9 fatias**, gerada por código e tingida por `Image.color`: `Botao`; `Moldura` (aqui, placa de aço rebitada em vez de madeira); `Pergaminho` (vira a página do caderno do geólogo); `Contorno` (destaque do tutorial); `Balao` (fala). Mais `Aperta` (escala 0,95 no toque), `Letreiro` no medidor de profundidade e uma paleta por bioma (§9). **Reaproveitar:** `dc:Scripts/View/Art.cs`.
+- **Fontes OFL**, com a licença junto em `Resources/Fonts`. No DC: Lilita One nos títulos e botões, Nunito ExtraBold no corpo.
+- **Retrato, 20:9 e toque.** CanvasScaler com referência 1080×1920 casando a largura, `AreaSegura` para o notch e alvo de 48 dp (`Dp`) em todo botão de camada. Arrastar rola a mina e toque curto aciona a estação, com limiar de arrasto para um gesto não virar o outro. Nas telas 20:9, a rocha do bioma, escurecida, continua até a borda: faixa lisa parece bug.
+- **Ícone adaptativo.** Fundo + frente, com o minerador (ou o capacete com lanterna) a no máximo 0,64 da camada, conferido nas máscaras círculo, squircle e quadrado. O ícone da loja (512) é o mesmo, e o ícone pintado ganha medalhão claro atrás. **Reaproveitar:** `dc:client/tools/icone_app.py` e `Setup.Icones`.
+
+### Onboarding (tutorial guiado)
+O tutorial segue o loop do MVP e a meta "1ª venda em < 60 s para ≥ 90%" (§56). A tela congela e só o alvo fica aceso (véu com buraco, contorno dourado e seta). Cada passo aparece uma vez, com "Pular tutorial" e "REVER TUTORIAL" nas configurações, e fica desligado no `-testsession`. Os gatilhos leem o estado do núcleo, e passo de botão se cancela se a tela mudar (no DC, um passo preso sem alvo congelava o jogo). **Reaproveitar:** `dc:Scripts/View/Tour.cs`; troque só a lista de passos e os textos (o campo `Arrastar` mostra o dedo arrastando, e o `Fala` põe retrato e balão).
+
+**Cartão de contexto no lugar de cutscene.** Antes do 1º toque, aparece o retrato pintado da geóloga (PROPOSTO: "Jade, a geóloga"; o nome é decisão do Vinicius), com o balão: *"Comprei este terreno com tudo o que eu tinha. Dizem que embaixo só tem carvão. Eu acho que tem muito mais. Me ajuda a cavar?"* O ciclo fecha no gate de 300 m, com ela de novo: *"Eu sabia! Olha só o que tem lá embaixo."* **Por quê:** no DC, uma cutscene atrasaria o 1º toque e somaria com o tutorial; o cartão do cliente resolveu com uma fala e um retrato. A geóloga também é a dona do caderno do UG-4, então o mesmo retrato serve duas vezes.
+
+| # | Passo (tipo) | Quando | Por quê |
+|---|---|---|---|
+| 1 | Cartão da geóloga (explicação) | 1ª abertura | contexto numa frase, sem cutscene |
+| 2 | "Toque na rocha" (ação: veio da camada 1) | logo depois | o verbo central antes de qualquer escolha (no DC, o verbo vem antes da 1ª bifurcação) |
+| 3 | "Suba o minério" (ação: elevador) | com a 1ª pilha de minério | mostra a cadeia do §7, uma peça por vez |
+| 4 | "Venda" (ação: armazém/venda) | minério na superfície | 1ª venda em < 60 s (§56) |
+| 5 | "Contrate o minerador" (ação) | 1º Cash suficiente | pilar Automação: o toque manual vira máquina |
+| 6 | "Isto é um gargalo" (explicação: a pilha piscando "travada") | 1ª vez que o elevador acumula | a matemática do §15 vista, não lida |
+| 7 | "Melhore o elevador" (ação) | logo depois do 6 | fecha o gargalo e ensina o menu de upgrade |
+| 8 | "Contrate o gerente da camada" (ação) | 1º gerente acessível | a camada roda sozinha (MVP do §51) |
+| 9 | "Desça: abra a camada 2" (ação: medidor de profundidade) | Cash para a 2ª camada | a pergunta "o que existe mais abaixo?" |
+| 10 | "Escolha o veio" (explicação: os 3 veios no corte) | ao abrir a camada 3 | a 1ª decisão real (UG-1); trocar custa tempo, nunca dinheiro |
+| 11 | "Toque na parede: a silhueta mostra o que tem atrás" (ação) | 1ª parede com raio-X | mistério sem sorteio (UG-2); meta: ≥ 60% abrem |
+| 12 | "300 m: precisa da broca nível X" (explicação) | 1ª vez perto do gate | a meta da sessão fica visível logo abaixo (§31) |
+| 13 | "A mina rendeu enquanto você estava fora" (explicação: cofre) | 1ª volta com ≥ 60 s fora | teto de 2 h e 2× opcional; o botão de coletar sem anúncio fica sempre visível |
+
+- **Ritmo:** os passos 1–4 cabem nos primeiros 60 s. Os outros nascem dos gatilhos, espaçados, para não virar parede de texto. Se o turno da noite (UG-6) entrar, ganha um passo na 1ª saída.
+- **Controle:** o jogo é de toque, sem joystick. A lição "nenhum desenho tampa o personagem" vira "a mão do tutorial e os balões não tampam a estação-alvo".
+
+### Monetização e compliance
+- **1 moeda (Cash) na v0.1** (§21 já revisado). Gems, Research Points e Core Tokens só entram com ralo no mapa de fontes e ralos.
+- **Nada aleatório pago.** A parede com raio-X (§17, UG-2) e os baús de conteúdo fixo (§37) já estão alinhados. Falta alinhar o que o §13 e o §28 deixam aberto (ver os conflitos).
+- **Rewarded sempre opcional:** 2× no claim do cofre e boost de 5 min (§51), com o botão "coletar" sem anúncio ao lado.
+- **Anúncio não personalizado para todos, sem `AD_ID`.** `LevelPlayPrivacySettings` com GDPR sem consentimento, CCPA opt-out e COPPA desligado, antes do `Init`; `Setup.SemIdDePublicidade` (pós-geração do Gradle) tira o `AD_ID` e as 3 permissões do Privacy Sandbox do manifesto; na Play, a declaração de ID de publicidade é **não**. O app do jogo nasce na conta **V-STACK** do LevelPlay (o Forge tinha ficado em outra conta). Sem chave, o jogo cai no simulador e não chama o `Init`. **Reaproveitar:** `dc:Scripts/View/Anuncios.cs`, `AnunciosLevelPlay.cs` e `dc:docs/MONETIZACAO.md` §4.
+- **Interstitial desligado na v0.1** (§36). Quando houver, a regra de quando mostrar mora no núcleo, nunca no SDK (no DC: `sim.InterstitialDue`).
+- **Offline com teto de 2 h como trava no código.** O Tuning só encurta, nunca alonga (como o `Balance.OfflineCapSeconds` do Forge). Também valem o teto relativo de 2× o upgrade mais barato ainda travado, Δt ≤ 0 pagando 0 e um id de transação por claim. **Reaproveitar:** `fs:Scripts/Core/Sim.cs` (`ApplyOffline`).
+- **IAP, só quando o Vinicius aprovar.** Unity IAP 5.4.3 atrás de uma interface, com loja falsa no PC; compra em 2 passos (o núcleo concede e só então confirma, para não perder a compra se o app fechar); restaurar compras; produtos de conteúdo fixo, listados na loja. **Reaproveitar:** `dc:Scripts/View/Loja.cs` e `LojaIap.cs`.
+- **Analytics e privacidade.** Os eventos do §48 são só eventos de jogo, sem dado pessoal. O diário local vem antes de qualquer SDK, e todo SDK entra na tabela de segurança dos dados da Play. A política de privacidade fica pública no GitHub Pages (branch `gh-pages`, 4 idiomas) e cita exatamente as redes usadas.
+
+### Play e lançamento
+- **Conta de organização.** A Play Console da V-STACK espera o D-U-N-S grátis pedido no DC (previsão 2026-11-25), e a mesma conta publica este jogo. Não abra conta pessoal nem pague o plano de ~R$ 1.700/ano. A lição do DC é que a burocracia de conta leva ~30 dias úteis: começa no início do projeto, nunca no fim.
+- **appId e nome antes do `Setup.cs`.** O `br.com.vstack.<nome>` é irreversível depois de publicado.
+- **Chave de upload fora do git**, com backup fora do PC: `%USERPROFILE%/.undergroundinc/upload.jks` + `upload.properties`, como o DC faz em `.dungeoncourier/`. Se a chave se perder, é preciso pedir reset ao suporte.
+- **AAB assinado** por `Setup.BuildAndroidBundle`. No DC, isso foi conferido: targetSdk 36, bibliotecas nativas alinhadas a 16 KB e Google Play Billing 9.
+- **Loja e criativos por script, do jogo real:** 8 capturas × 4 idiomas do build de release (sem "Development Build"), ícone 512, feature graphic 1024×500 e os vídeos 9:16 dos criativos do §50/§55 ("How deep can you go?", "qual veio você abriria?", "o que tem atrás da parede?"), gravados com `-record`. Esse material serve também ao teste de criativos Underground × Forge (§51). **Reaproveitar:** `dc:client/tools/loja_fotos.sh`, `loja_assets.py`, `criativos.py`, `dc:docs/LOJA.md` e `CRIATIVOS.md`.
+- **Pré-release no GitHub** a cada versão, com APK, AAB, zip Windows e o pacote da loja.
+
+### Android
+- **Taxa de quadros:** `QualitySettings.vSyncCount = 0` e `Application.targetFrameRate = 60` logo no início (no DC, o POCO F4 foi de 28–36 para 55 fps). Depois, meça bateria e temperatura numa sessão longa; no Forge, a bateria ficou em até 41 °C.
+- **APK de worktree:** gere via `subst R: <client>`, porque caminho longo com espaço quebra o CMake do Gradle. O worktree vai em caminho curto (`%TEMP%\wt\...`), nunca no scratchpad (estoura o MAX_PATH).
+- **adb no Git Bash:** `adb shell "am start -n <pkg>/<act> -e unity '-a -b'"`, com as aspas por dentro; sem elas, só o 1º argumento chega ao jogo.
+- **Aparelho:** mantenha só o APK atual (o build apaga os anteriores). Pergunte ao Vinicius antes de usar o celular dele e fotografe só com o jogo em primeiro plano.
+- **Desempenho se mede em aparelho original de entrada.** O POCO de 4 anos se limita depois de 1 min e não serve de régua. A mina "enorme" do §47 (pooling, simulação agregada fora da tela) se prova com o PSS e o FPS medidos no aparelho. **Reaproveitar:** `fs:client/tools/medir_aparelho.sh`.
+
+### Conflitos com o GDD atual
+Os conflitos ficam só apontados aqui; as outras seções do GDD não foram editadas. Todos pedem decisão do Vinicius.
+1. **§22, offline "com upgrades, no máximo 8 h", contra o guardrail de 2 h.** **Recomendação:** 2 h como trava no código na v0.1. Os upgrades do §19 (+10% offline efficiency) sobem a **taxa**, não o teto. Teto maior só com decisão registrada.
+2. **§36 (interstitial na v0.2, por RemoteConfig) contra o §55 UG-5 ("interstitial nunca").** O próprio GDD se contradiz. **Recomendação:** decidir antes do contrato da v0.2. Se entrar, que seja como no DC: um único ponto natural (lá, o CONTINUAR entre contratos; aqui, a volta à superfície), nunca nos 3 primeiros do dia, no máximo 1 a cada 4 min, decidido pelo núcleo (`sim.InterstitialDue`), sumindo com Remove Ads, e com a unidade vazia no `config.json` desligando tudo.
+3. **§13, §28 e §35 juntos:** "funcionários raros podem ter habilidades" (§13), Premium Track com workers e gems (§28), Gem Packs e Engineer Pack (§35). Sem regra, isso vira trabalhador raro comprado com gem, que é aleatório pago e segunda moeda premium. **Recomendação:** trabalhador raro sai por marco de profundidade, e pacote pago tem conteúdo fixo e listado. O `Equipe.cs` do Forge já segue "worker fixo e nomeado, nenhum traço sorteado".
+4. **§31 (primeiro dia com "constrói refinaria") contra o §51 (MVP sem refinaria).** O tutorial acima segue o MVP. **Recomendação:** alinhar o §31 ao MVP quando o contrato da v0.1 for escrito.
+5. **§10 e §19 ("+5% rare mineral chance").** Chance é sorteio. Não é pago hoje, mas um evento (§26, Crystal Storm) somado a um boost comprado chegaria perto. **Recomendação:** mineral raro por sequência determinística (Weyl, como o VIP do Forge e a parede do UG-2), o que também facilita testar.
+6. **§43 ("workers são sprites com tween") contra a rota do DC (folhas animadas por clipe).** Animação de verdade custa APK: no DC, as folhas HD somaram 15 MiB. **Recomendação:** folha animada para o minerador e o gerente, que são a "mina viva" do §43; tween para carrinho, elevador e máquinas.
+7. **§51 ("antes de construir, um teste só de criativos") contra o guardrail "criativos gravados do jogo real".** Criativo de mockup está vetado. **Recomendação:** o teste precisa de um greybox jogável mínimo (núcleo + View procedural) gravado com `-record`; o núcleo do Forge (§57) encurta esse greybox.
+8. **Personagem do cartão de contexto.** O GDD não tem nenhum personagem com nome. **Recomendação:** aprovar (ou trocar) "Jade, a geóloga" e as duas falas acima.
+
+### Primeiros passos recomendados
+1. Decidir os conflitos 1, 2, 3, 7 e 8 e registrar a decisão no GDD.
+2. Quando o Vinicius pedir o projeto neste grupo: escrever `docs/CONTRATO_V01.md` e a matriz `docs/CONTRATO_LANCAMENTO.md`, e abrir `_memoria/STATUS_underground-inc.md`.
+3. Montar o esqueleto (núcleo do Forge + casca do DC, namespace `UG`) com o portão verde ainda vazio.
+4. Fazer núcleo e bot antes de qualquer arte, em greybox procedural, e provar o UG-1 (nenhum veio acima de 70%) e o UG-5 (≤ 12 min de jogo ativo até os 300 m, também no bot lento ×0,4).
+5. Pôr o tutorial (passos 1–9), o cartão da geóloga e o diário no greybox, e medir a "1ª venda em < 60 s" com gente, não com o bot.
+6. Gravar os criativos do greybox com `-record` para o teste do slot idle (§51).
+7. Só com o jogo validado: Lote 1 de arte (≈ 245–355 créditos, com aval), UI pintada grátis, ícone adaptativo, appId e chave de upload com backup.
