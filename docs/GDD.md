@@ -1,3 +1,9 @@
+> **Revisão 2026-11-27 (Conselho do TIME DE JOGOS) — veredito: REDIRECIONAR.** Ata: [`conselho/2026-11-27-revisao-gdd.md`](conselho/2026-11-27-revisao-gdd.md); visão do portfólio: `JOGOS NOVOS/00_PESQUISA/CONSELHO_PORTFOLIO_2026-11-27.md`.
+> 1. **O slot idle já tem dois jogos prontos:** Forge Street (0.6.0, APK de 2026-11-21) e Little Terminal (AAB 0.0.1-alpha, 557 testes). O "teste de criativos Underground × Forge" do §51 perdeu o sentido: os dois idle foram construídos.
+> 2. O Underground passa a ser **o candidato a 2º jogo do núcleo idle do estúdio**, em 2–3 semanas sobre o código do Little Terminal ou do Forge, **só depois** de um dos dois ter D1 ≥ 26% numa coorte real (§58).
+> 3. As três ideias mais fortes deste GDD (UG-5 sem parede provado pelo bot, UG-6 turno da noite, UG-7 a mina inteira trabalha junto) viram **sugestões para o backlog pós-lançamento** do Forge Street e do Little Terminal (§58.3).
+> 4. **Os 8 conflitos da seção de lições foram resolvidos** conforme as recomendações dela (§58.4), exceto o nome da geóloga, que fica com o Vinicius.
+
 # UNDERGROUND INC.
 ## Game Design Document — Versão de Produto
 
@@ -1673,3 +1679,55 @@ Os conflitos ficam só apontados aqui; as outras seções do GDD não foram edit
 5. Pôr o tutorial (passos 1–9), o cartão da geóloga e o diário no greybox, e medir a "1ª venda em < 60 s" com gente, não com o bot.
 6. Gravar os criativos do greybox com `-record` para o teste do slot idle (§51).
 7. Só com o jogo validado: Lote 1 de arte (≈ 245–355 créditos, com aval), UI pintada grátis, ícone adaptativo, appId e chave de upload com backup.
+
+
+---
+
+# 58. REVISÃO DO CONSELHO E PLANO A PARTIR DE 2026-11-27
+
+## 58.1 Por que redirecionar
+
+| Fato | Evidência |
+|---|---|
+| Forge Street e Little Terminal são idle/tycoon de retrato, prontos para loja, à espera do D-U-N-S | `03_FORGE_STREET/APK/`; `09_TINY_AIRPORT_EMPIRE/docs/GO_NOGO.md` |
+| Os dois disputam o mesmo público e o mesmo CPI-alvo que o Underground (§56 já usa o CPI do Forge) | §56 |
+| Nenhum dos três tem um jogador sequer | nenhuma coorte |
+
+Um 3º idle agora dividiria o tempo de um dev solo entre três jogos do mesmo gênero sem nenhuma informação nova. O que o Underground tem de bom (profundidade como pergunta, veio com escolha) não some: espera a coorte. *Desempate: escopo/prazo → producer.*
+
+## 58.2 Quando reabrir e como
+
+**Condição:** Forge Street **ou** Little Terminal com D1 ≥ 26% e D7 ≥ 5% numa coorte de ≥ 1,5 mil installs (régua do §56).
+
+**Como:** o Little Terminal é hoje a base mais parecida, mais até que o Forge do §57:
+
+| Peça do Little Terminal (`TA.Core`) | Uso no Underground |
+|---|---|
+| 8 estações com filas, passo fixo de 1/30 s, determinístico pela semente | camada = estação; carrinho e elevador = fila |
+| Equipe limitada que o jogador **move** entre estações | mover mineradores entre camadas: dá ao idle a decisão ativa que o §53 pede ("idle excessivamente passivo") |
+| Bot de 200 sementes × 10/20 ondas com portões de design (TA-1, TA-2) | provar UG-1 (nenhum veio > 70%) e UG-5 (≤ 12 min até cada gate) |
+| Offline com trava de 2 h no código, Gems validadas em servidor, UGS (Authentication, Cloud Save) | §22 e a v0.2 |
+| `verify.sh quick/full/android`, GameCI no CI, `checa_repo.py` com os guardrails | portão desde o 1º PR |
+
+Se os dois idle validarem, extrair o pacote `VStack.IdleCore` (estação, fila, cofre, equipe, bot, diário) antes de abrir o Underground, como o §57 já previa.
+
+## 58.3 Sugestões para o backlog dos idle que já existem (não são compromisso)
+
+| Ideia daqui | Onde entra | Por quê |
+|---|---|---|
+| UG-5 "sem parede de progressão, provado pelo bot" | Forge e Little Terminal, como promessa de loja | os dois já têm bot; vira texto de ficha e argumento de criativo a custo quase zero |
+| UG-6 "turno da noite" (escolher 2 estações para rodar no offline) | Little Terminal | o offline de 2 h ganha uma decisão antes de sair |
+| UG-7 "as estações antigas abastecem as novas" | Forge Street | resolve a irrelevância das primeiras estações que o próprio líder do gênero admite (`COMPETITIVO.md`) |
+
+## 58.4 Conflitos da seção de lições, resolvidos
+
+| # | Conflito | Decisão |
+|---|---|---|
+| 1 | offline de 8 h (§22) | **2 h no código**; upgrade sobe a taxa, nunca o teto |
+| 2 | interstitial na v0.2 (§36) × "nunca" (UG-5) | **nunca no MVP**; se entrar depois, só no ponto natural (volta à superfície), no máximo 1 a cada 4 min, decidido pelo núcleo, sumindo com Remove Ads |
+| 3 | trabalhador raro com gem (§13, §28, §35) | trabalhador raro só por marco de profundidade; pacote pago com conteúdo fixo e listado |
+| 4 | refinaria no 1º dia (§31) × MVP sem refinaria (§51) | vale o MVP; o §31 se alinha no contrato da v0.1 |
+| 5 | "+5% de chance de mineral raro" (§10, §19) | mineral raro por sequência determinística (Weyl), como a parede do UG-2 |
+| 6 | workers como tween (§43) | folha animada para minerador e gerente; tween para carrinho, elevador e máquinas |
+| 7 | teste de criativos antes de construir (§51) | **substituído** pela condição do §58.2; criativo só de greybox real |
+| 8 | personagem do cartão ("Jade, a geóloga") | **decisão do Vinicius** quando o jogo reabrir |
